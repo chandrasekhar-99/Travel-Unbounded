@@ -1,13 +1,16 @@
 import Link from "next/link";
 
 const Footer = () => {
-  return(
-     <footer className="border-t border-border bg-slate-950 text-white">
+  return (
+    <footer className="border-t border-border bg-slate-950 text-white">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-10 md:grid-cols-3">
           {/* Brand */}
           <div>
-            <Link href="/" className="text-xl font-bold text-white">
+            <Link
+              href="/"
+              className="text-xl font-bold text-white transition hover:text-primary"
+            >
               Travel Unbounded
             </Link>
 
@@ -22,15 +25,24 @@ const Footer = () => {
             <h3 className="font-semibold">Quick Links</h3>
 
             <div className="mt-4 flex flex-col gap-3 text-sm text-slate-400">
-              <Link className="transition hover:text-white" href="/">
+              <Link
+                className="transition hover:text-white"
+                href="/"
+              >
                 Home
               </Link>
 
-              <Link className="transition hover:text-white" href="/about">
+              <Link
+                className="transition hover:text-white"
+                href="/about"
+              >
                 About
               </Link>
 
-              <Link className="transition hover:text-white" href="/contact">
+              <Link
+                className="transition hover:text-white"
+                href="/contact"
+              >
                 Contact
               </Link>
             </div>
@@ -42,18 +54,31 @@ const Footer = () => {
 
             <div className="mt-4 space-y-3 text-sm text-slate-400">
               <p>India</p>
-              <p>hello@travelunbounded.com</p>
-              <p>+91 98765 43210</p>
+
+              <a
+                href="mailto:hello@travelunbounded.com"
+                className="block transition hover:text-white"
+              >
+                hello@travelunbounded.com
+              </a>
+
+              <a
+                href="tel:+919876543210"
+                className="block transition hover:text-white"
+              >
+                +91 98765 43210
+              </a>
             </div>
           </div>
         </div>
 
+        {/* Copyright */}
         <div className="mt-10 border-t border-slate-800 pt-6 text-center text-sm text-slate-500">
           © {new Date().getFullYear()} Travel Unbounded. All rights reserved.
         </div>
       </div>
     </footer>
-  )
-}
+  );
+};
 
-export default Footer
+export default Footer;

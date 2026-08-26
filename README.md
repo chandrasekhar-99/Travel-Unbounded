@@ -99,8 +99,6 @@ The page displays:
 
 ---
 
----
-
 ## Setup / Installation
 
 ### 1. Clone the repository
@@ -123,10 +121,10 @@ npm install
 
 ### 4. Configure environment variables
 
-Create a `.env.local` file in the root directory.
+Create a `.env` file in the root directory.
 
 ```text
-.env.local
+.env
 ```
 
 Add your MongoDB connection string:
@@ -135,7 +133,7 @@ Add your MongoDB connection string:
 MONGODB_URI=your_mongodb_connection_string
 ```
 
-The actual MongoDB credentials should be stored only in `.env.local`.
+The actual MongoDB credentials should be stored only in .env and must not be committed to GitHub.
 
 A `.env.example` file is included in the repository with placeholder values so developers know which environment variables are required.
 
@@ -264,10 +262,10 @@ Example success message:
 
 Sensitive credentials are not committed to GitHub.
 
-The project uses:
+The project uses a `.env` file for local environment variables:
 
 ```text
-.env.local
+.env
 ```
 
 for local environment variables.
@@ -344,17 +342,17 @@ This project can be deployed using **Vercel**.
 MONGODB_URI=your_mongodb_connection_string
 ```
 
-4. Deploy the project.
+### 4. Deploy the project
 
 Make sure the MongoDB database allows connections from your deployed application.
 
 For local development, continue using:
 
 ```text
-.env.local
+.env
 ```
 
-Do not commit `.env.local` to GitHub.
+Do not commit .env to GitHub. The .env file contains sensitive database credentials.
 
 ---
 

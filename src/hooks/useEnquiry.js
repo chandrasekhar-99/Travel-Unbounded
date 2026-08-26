@@ -25,7 +25,7 @@ const useEnquiry = () => {
 
       if (!response.ok) {
         throw new Error(
-          data.message || "Unable to submit your enquiry."
+          data?.message || "Unable to submit your enquiry."
         );
       }
 
@@ -36,7 +36,7 @@ const useEnquiry = () => {
       console.error("Enquiry submission error:", error);
 
       setError(
-        error.message ||
+        error?.message ||
           "Something went wrong. Please try again later."
       );
 

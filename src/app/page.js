@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import DestinationCard from "@/components/home/DestinationCard";
 import {
   indiaDestinations,
@@ -19,13 +20,16 @@ const Home = () => {
       ======================================== */}
       <section className="relative flex min-h-[650px] items-center overflow-hidden">
         {/* Background Image */}
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=2000&q=85')",
-          }}
-        />
+<div className="absolute inset-0">
+  <Image
+    src="https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=1600&q=75"
+    alt="Travel destination in India"
+    fill
+    priority
+    className="object-cover object-center"
+    sizes="100vw"
+  />
+</div>
 
         {/* Overlay */}
         <div className="absolute inset-0 bg-black/55" />

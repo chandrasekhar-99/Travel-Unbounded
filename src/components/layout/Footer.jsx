@@ -1,4 +1,10 @@
 import Link from "next/link";
+import {
+  FaFacebookF,
+  FaInstagram,
+  FaYoutube,
+  FaLinkedinIn,
+} from "react-icons/fa";
 
 const Footer = () => {
   return (
@@ -18,6 +24,59 @@ const Footer = () => {
               Discover unforgettable journeys across India and around the
               world with experiences designed around you.
             </p>
+
+            {/* Social Media */}
+            <div className="mt-6">
+              <h3 className="text-sm font-semibold text-white">
+                Follow Us
+              </h3>
+
+              <div className="mt-4 flex items-center gap-3">
+                {/* Instagram */}
+                <a
+                  href="https://www.instagram.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Instagram"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-700 text-slate-400 transition hover:border-primary hover:bg-primary hover:text-white"
+                >
+                  <FaInstagram size={18} />
+                </a>
+
+                {/* Facebook */}
+                <a
+                  href="https://www.facebook.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Facebook"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-700 text-slate-400 transition hover:border-primary hover:bg-primary hover:text-white"
+                >
+                  <FaFacebookF size={16} />
+                </a>
+
+                {/* YouTube */}
+                <a
+                  href="https://www.youtube.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="YouTube"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-700 text-slate-400 transition hover:border-primary hover:bg-primary hover:text-white"
+                >
+                  <FaYoutube size={18} />
+                </a>
+
+                {/* LinkedIn */}
+                <a
+                  href="https://www.linkedin.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="LinkedIn"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-700 text-slate-400 transition hover:border-primary hover:bg-primary hover:text-white"
+                >
+                  <FaLinkedinIn size={17} />
+                </a>
+              </div>
+            </div>
           </div>
 
           {/* Navigation */}

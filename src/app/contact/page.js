@@ -1,8 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
+import PhoneInput, {
+  isValidPhoneNumber,
+  parsePhoneNumber,
+} from "react-phone-number-input";
 import "react-phone-number-input/style.css";
+
+import useEnquiry from "@/hooks/useEnquiry";
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -16,30 +21,47 @@ const Contact = () => {
   });
 
   const [errors, setErrors] = useState({});
-  const [status, setStatus] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Get tomorrow's date for the date input
+  const {
+    submitEnquiry,
+    isSubmitting,
+    isSuccess,
+    error,
+    resetStatus,
+  } = useEnquiry();
+
+  // ----------------------------------------
+  // Get tomorrow's date
+  // ----------------------------------------
+
   const getMinDate = () => {
     const tomorrow = new Date();
+
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     return tomorrow.toISOString().split("T")[0];
   };
 
+  // ----------------------------------------
+  // Form Validation
+  // ----------------------------------------
+
   const validateForm = () => {
     const newErrors = {};
 
+    // Full Name
     if (!formData.fullName.trim()) {
       newErrors.fullName = "Full name is required.";
     }
 
+    // Phone
     if (!formData.phone) {
       newErrors.phone = "Contact number is required.";
     } else if (!isValidPhoneNumber(formData.phone)) {
       newErrors.phone = "Please enter a valid phone number.";
     }
 
+    // Email
     if (!formData.email.trim()) {
       newErrors.email = "Email is required.";
     } else if (
@@ -48,36 +70,55 @@ const Contact = () => {
       newErrors.email = "Please enter a valid email address.";
     }
 
+    // Travel Date
     if (!formData.travelDate) {
       newErrors.travelDate = "Date of travel is required.";
     } else {
       const selectedDate = new Date(formData.travelDate);
+
       const tomorrow = new Date();
 
       tomorrow.setHours(0, 0, 0, 0);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
       if (selectedDate < tomorrow) {
-        newErrors.travelDate = "Travel date must be in the future.";
+        newErrors.travelDate =
+          "Travel date must be in the future.";
       }
     }
 
-    if (!formData.people || Number(formData.people) < 1) {
-      newErrors.people = "Number of people must be at least 1.";
+    // Number of People
+    if (
+      formData.people === "" ||
+      Number(formData.people) < 1
+    ) {
+      newErrors.people =
+        "Number of people must be at least 1.";
     }
 
+    // Hotel Category
     if (!formData.hotelCategory) {
-      newErrors.hotelCategory = "Please select a hotel category.";
+      newErrors.hotelCategory =
+        "Please select a hotel category.";
     }
 
-    if (formData.children === "" || Number(formData.children) < 0) {
-      newErrors.children = "Number of children cannot be negative.";
+    // Children
+    if (
+      formData.children === "" ||
+      Number(formData.children) < 0
+    ) {
+      newErrors.children =
+        "Number of children cannot be negative.";
     }
 
     setErrors(newErrors);
 
     return Object.keys(newErrors).length === 0;
   };
+
+  // ----------------------------------------
+  // Normal Input Change
+  // ----------------------------------------
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -92,8 +133,12 @@ const Contact = () => {
       [name]: "",
     }));
 
-    setStatus("");
+    resetStatus();
   };
+
+  // ----------------------------------------
+  // Phone Change
+  // ----------------------------------------
 
   const handlePhoneChange = (value) => {
     setFormData((previous) => ({
@@ -106,13 +151,15 @@ const Contact = () => {
       phone: "",
     }));
 
-    setStatus("");
+    resetStatus();
   };
+
+  // ----------------------------------------
+  // Form Submit
+  // ----------------------------------------
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
-    setStatus("");
 
     const isValid = validateForm();
 
@@ -120,25 +167,38 @@ const Contact = () => {
       return;
     }
 
-    setIsSubmitting(true);
-
     try {
-      const response = await fetch("/api/enquiries", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
+      // Parse phone number
+      const phoneNumber = parsePhoneNumber(
+        formData.phone
+      );
 
-      const data = await response.json();
+      // Data expected by backend
+      const enquiryData = {
+        fullName: formData.fullName.trim(),
 
-      if (!response.ok) {
-        throw new Error(data.message || "Something went wrong.");
-      }
+        countryCode: phoneNumber
+          ? `+${phoneNumber.countryCallingCode}`
+          : "",
 
-      setStatus("success");
+        contactNumber: formData.phone,
 
+        email: formData.email.trim(),
+
+        dateOfTravel: formData.travelDate,
+
+        numberOfPeople: Number(formData.people),
+
+        hotelCategory: formData.hotelCategory,
+
+        numberOfChildren: Number(formData.children),
+      };
+
+      console.log("Sending enquiry:", enquiryData);
+
+      await submitEnquiry(enquiryData);
+
+      // Reset form after successful submission
       setFormData({
         fullName: "",
         phone: "",
@@ -151,20 +211,17 @@ const Contact = () => {
 
       setErrors({});
     } catch (error) {
-      console.error("Enquiry submission error:", error);
-
-      setStatus(
-        error.message ||
-          "Unable to submit your enquiry. Please try again."
-      );
-    } finally {
-      setIsSubmitting(false);
+      // Error is already handled by useEnquiry
+      console.error("Submission failed:", error);
     }
   };
 
   return (
     <main>
-      {/* Hero */}
+      {/* =====================================
+          HERO
+      ====================================== */}
+
       <section className="bg-primary px-4 py-20 text-white">
         <div className="mx-auto max-w-7xl">
           <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-white/80">
@@ -176,15 +233,22 @@ const Contact = () => {
           </h1>
 
           <p className="mt-6 max-w-2xl text-lg leading-8 text-white/90">
-            Share a few details about your travel plans and our travel
-            experts will help you create an unforgettable experience.
+            Share a few details about your travel plans and our
+            travel experts will help you create an unforgettable
+            experience.
           </p>
         </div>
       </section>
 
-      {/* Contact Form */}
+      {/* =====================================
+          CONTACT FORM
+      ====================================== */}
+
       <section className="px-4 py-16 md:py-20">
         <div className="mx-auto max-w-4xl">
+
+          {/* Heading */}
+
           <div className="mb-10">
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-primary">
               Enquiry Form
@@ -195,13 +259,16 @@ const Contact = () => {
             </h2>
 
             <p className="mt-4 leading-7 text-gray-600">
-              Fill in the form below and our team will get back to you
-              with a personalized travel plan.
+              Fill in the form below and our team will get back
+              to you with a personalized travel plan.
             </p>
           </div>
 
-          {/* Success Message */}
-          {status === "success" && (
+          {/* =====================================
+              SUCCESS MESSAGE
+          ====================================== */}
+
+          {isSuccess && (
             <div
               className="mb-8 rounded-xl border border-green-200 bg-green-50 p-5 text-green-800"
               role="status"
@@ -211,14 +278,17 @@ const Contact = () => {
               </h3>
 
               <p className="mt-1 text-sm">
-                Thank you! Our travel expert will contact you within
-                24 hours.
+                Thank you! Our travel expert will contact you
+                within 24 hours.
               </p>
             </div>
           )}
 
-          {/* Error Message */}
-          {status && status !== "success" && (
+          {/* =====================================
+              ERROR MESSAGE
+          ====================================== */}
+
+          {error && (
             <div
               className="mb-8 rounded-xl border border-red-200 bg-red-50 p-5 text-red-800"
               role="alert"
@@ -227,9 +297,15 @@ const Contact = () => {
                 Unable to submit your enquiry
               </h3>
 
-              <p className="mt-1 text-sm">{status}</p>
+              <p className="mt-1 text-sm">
+                {error}
+              </p>
             </div>
           )}
+
+          {/* =====================================
+              FORM
+          ====================================== */}
 
           <form
             onSubmit={handleSubmit}
@@ -237,7 +313,11 @@ const Contact = () => {
             className="rounded-2xl border border-border bg-white p-6 shadow-sm md:p-8"
           >
             <div className="grid gap-6 md:grid-cols-2">
-              {/* Full Name */}
+
+              {/* =================================
+                  FULL NAME
+              ================================== */}
+
               <div className="md:col-span-2">
                 <label
                   htmlFor="fullName"
@@ -267,7 +347,10 @@ const Contact = () => {
                 )}
               </div>
 
-              {/* Phone */}
+              {/* =================================
+                  PHONE
+              ================================== */}
+
               <div>
                 <label
                   htmlFor="phone"
@@ -283,7 +366,9 @@ const Contact = () => {
                   onChange={handlePhoneChange}
                   placeholder="Enter phone number"
                   className={`phone-input ${
-                    errors.phone ? "phone-input-error" : ""
+                    errors.phone
+                      ? "phone-input-error"
+                      : ""
                   }`}
                 />
 
@@ -294,7 +379,10 @@ const Contact = () => {
                 )}
               </div>
 
-              {/* Email */}
+              {/* =================================
+                  EMAIL
+              ================================== */}
+
               <div>
                 <label
                   htmlFor="email"
@@ -324,7 +412,10 @@ const Contact = () => {
                 )}
               </div>
 
-              {/* Travel Date */}
+              {/* =================================
+                  TRAVEL DATE
+              ================================== */}
+
               <div>
                 <label
                   htmlFor="travelDate"
@@ -354,7 +445,10 @@ const Contact = () => {
                 )}
               </div>
 
-              {/* Number of People */}
+              {/* =================================
+                  NUMBER OF PEOPLE
+              ================================== */}
+
               <div>
                 <label
                   htmlFor="people"
@@ -384,7 +478,10 @@ const Contact = () => {
                 )}
               </div>
 
-              {/* Hotel Category */}
+              {/* =================================
+                  HOTEL CATEGORY
+              ================================== */}
+
               <div>
                 <label
                   htmlFor="hotelCategory"
@@ -404,10 +501,21 @@ const Contact = () => {
                       : "border-gray-300"
                   }`}
                 >
-                  <option value="">Select category</option>
-                  <option value="Standard">Standard</option>
-                  <option value="Deluxe">Deluxe</option>
-                  <option value="Luxury">Luxury</option>
+                  <option value="">
+                    Select category
+                  </option>
+
+                  <option value="Standard">
+                    Standard
+                  </option>
+
+                  <option value="Deluxe">
+                    Deluxe
+                  </option>
+
+                  <option value="Luxury">
+                    Luxury
+                  </option>
                 </select>
 
                 {errors.hotelCategory && (
@@ -417,7 +525,10 @@ const Contact = () => {
                 )}
               </div>
 
-              {/* Children */}
+              {/* =================================
+                  CHILDREN
+              ================================== */}
+
               <div>
                 <label
                   htmlFor="children"
@@ -451,14 +562,19 @@ const Contact = () => {
               </div>
             </div>
 
-            {/* Submit */}
+            {/* =====================================
+                SUBMIT BUTTON
+            ====================================== */}
+
             <div className="mt-8">
               <button
                 type="submit"
                 disabled={isSubmitting}
                 className="w-full rounded-full bg-primary px-7 py-3.5 font-semibold text-white transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
-                {isSubmitting ? "Submitting..." : "Submit Enquiry"}
+                {isSubmitting
+                  ? "Submitting..."
+                  : "Submit Enquiry"}
               </button>
             </div>
           </form>

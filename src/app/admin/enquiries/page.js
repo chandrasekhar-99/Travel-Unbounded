@@ -42,9 +42,33 @@ const EnquiriesPage = () => {
     }
   };
 
-  useEffect(() => {
-    fetchEnquiries();
-  }, []);
+ useEffect(() => {
+  const loadEnquiries = async () => {
+    try {
+      const response = await fetch("/api/enquiries");
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Unable to fetch enquiries."
+        );
+      }
+
+      setEnquiries(data.enquiries || []);
+    } catch (error) {
+      console.error("Fetch enquiries error:", error);
+
+      setError(
+        error.message || "Unable to fetch enquiries."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  loadEnquiries();
+}, []);
 
   // -----------------------------------------
   // Loading

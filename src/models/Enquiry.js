@@ -11,11 +11,13 @@ const enquirySchema = new mongoose.Schema(
     countryCode: {
       type: String,
       required: true,
+      trim: true,
     },
 
     contactNumber: {
       type: String,
       required: true,
+      trim: true,
     },
 
     email: {
@@ -40,6 +42,12 @@ const enquirySchema = new mongoose.Schema(
       type: String,
       required: true,
       enum: ["Standard", "Deluxe", "Luxury"],
+    },
+
+    status: {
+      type: String,
+      enum: ["New", "Contacted", "Converted", "Closed"],
+      default: "New",
     },
 
     numberOfChildren: {

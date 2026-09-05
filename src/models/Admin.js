@@ -1,7 +1,13 @@
 import mongoose from "mongoose";
 
-const adminUserSchema = new mongoose.Schema(
+const AdminSchema = new mongoose.Schema(
   {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
     email: {
       type: String,
       required: true,
@@ -20,14 +26,19 @@ const adminUserSchema = new mongoose.Schema(
       enum: ["admin"],
       default: "admin",
     },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-const AdminUser =
-  mongoose.models.AdminUser ||
-  mongoose.model("AdminUser", adminUserSchema);
+const Admin =
+  mongoose.models.Admin ||
+  mongoose.model("Admin", AdminSchema);
 
-export default AdminUser;
+export default Admin;

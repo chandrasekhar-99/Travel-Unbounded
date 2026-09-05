@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
-import AdminUser from "../src/models/AdminUser.js";
+import AdminUser from "../src/models/Admin.js";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -29,9 +29,11 @@ async function seedAdmin() {
     const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 12);
 
     await AdminUser.create({
+      name: "Travel Unbounded Admin",
       email: ADMIN_EMAIL,
       passwordHash,
       role: "admin",
+      isActive: true,
     });
 
     console.log("Admin user created successfully.");

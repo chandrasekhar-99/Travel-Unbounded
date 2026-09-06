@@ -1,6 +1,8 @@
+import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 
 import { connectDB } from "@/lib/mongodb";
+import { requireAdmin } from "@/lib/auth";
 import Enquiry from "@/models/Enquiry";
 
 const ALLOWED_STATUSES = [
@@ -12,15 +14,36 @@ const ALLOWED_STATUSES = [
 
 export async function PATCH(request, { params }) {
   try {
-    await connectDB();
+    // -----------------------------------------
+    // Authentication
+    // -----------------------------------------
+
+    const admin = await requireAdmin();
+
+    if (!admin) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Unauthorized",
+        },
+        { status: 401 }
+      );
+    }
+
+    // -----------------------------------------
+    // Get route parameter
+    // -----------------------------------------
 
     const { id } = await params;
 
     // -----------------------------------------
-    // Validate ID
+    // Validate enquiry ID
     // -----------------------------------------
 
-    if (!id) {
+    if (
+      typeof id !== "string" ||
+      !id.trim()
+    ) {
       return NextResponse.json(
         {
           success: false,
@@ -30,19 +53,59 @@ export async function PATCH(request, { params }) {
       );
     }
 
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid enquiry ID.",
+        },
+        { status: 400 }
+      );
+    }
+
     // -----------------------------------------
-    // Parse body
+    // Parse request body
     // -----------------------------------------
 
-    const body = await request.json();
+    let body;
 
-    const { status } = body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid request body.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // -----------------------------------------
+    // Validate body
+    // -----------------------------------------
+
+    if (
+      !body ||
+      typeof body !== "object" ||
+      Array.isArray(body)
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid request body.",
+        },
+        { status: 400 }
+      );
+    }
 
     // -----------------------------------------
     // Validate status
     // -----------------------------------------
 
-    if (!status) {
+    const { status } = body;
+
+    if (typeof status !== "string") {
       return NextResponse.json(
         {
           success: false,
@@ -52,7 +115,19 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    if (!ALLOWED_STATUSES.includes(status)) {
+    const normalizedStatus = status.trim();
+
+    if (!normalizedStatus) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Status is required.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!ALLOWED_STATUSES.includes(normalizedStatus)) {
       return NextResponse.json(
         {
           success: false,
@@ -64,6 +139,12 @@ export async function PATCH(request, { params }) {
     }
 
     // -----------------------------------------
+    // Connect database
+    // -----------------------------------------
+
+    await connectDB();
+
+    // -----------------------------------------
     // Find and update enquiry
     // -----------------------------------------
 
@@ -71,7 +152,7 @@ export async function PATCH(request, { params }) {
       id,
       {
         $set: {
-          status,
+          status: normalizedStatus,
         },
       },
       {
@@ -101,7 +182,8 @@ export async function PATCH(request, { params }) {
     return NextResponse.json(
       {
         success: true,
-        message: "Enquiry status updated successfully.",
+        message:
+          "Enquiry status updated successfully.",
         enquiry,
       },
       { status: 200 }
@@ -111,6 +193,23 @@ export async function PATCH(request, { params }) {
       "UPDATE ENQUIRY STATUS API ERROR:",
       error
     );
+
+    // -----------------------------------------
+    // Mongoose validation error
+    // -----------------------------------------
+
+    if (error?.name === "ValidationError") {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid enquiry data.",
+          errors: Object.values(error.errors).map(
+            (err) => err.message
+          ),
+        },
+        { status: 400 }
+      );
+    }
 
     // -----------------------------------------
     // Invalid MongoDB ObjectId
@@ -127,27 +226,14 @@ export async function PATCH(request, { params }) {
     }
 
     // -----------------------------------------
-    // Invalid JSON
-    // -----------------------------------------
-
-    if (error instanceof SyntaxError) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid request body.",
-        },
-        { status: 400 }
-      );
-    }
-
-    // -----------------------------------------
     // Generic error
     // -----------------------------------------
 
     return NextResponse.json(
       {
         success: false,
-        message: "Unable to update enquiry status.",
+        message:
+          "Unable to update enquiry status.",
       },
       { status: 500 }
     );

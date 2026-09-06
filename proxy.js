@@ -1,28 +1,64 @@
 import { NextResponse } from "next/server";
+import jwt from "jsonwebtoken";
 
-import { verifyAdminToken } from "@/lib/auth";
+const JWT_SECRET = process.env.AUTH_SECRET;
 
 export function proxy(request) {
   const { pathname } = request.nextUrl;
 
-  // Login page is public
+  // -----------------------------------------
+  // Allow admin login page
+  // -----------------------------------------
+
   if (pathname === "/admin/login") {
     return NextResponse.next();
   }
 
-  // Protect all /admin routes
-  if (pathname.startsWith("/admin")) {
+  // -----------------------------------------
+  // Protect admin dashboard pages
+  // -----------------------------------------
+
+  if (pathname.startsWith("/admin/dashboard")) {
     const token = request.cookies.get("admin_token")?.value;
 
-    const admin = verifyAdminToken(token);
-
-    if (!admin || admin.role !== "admin") {
+    // No token
+    if (!token) {
       return NextResponse.redirect(
         new URL("/admin/login", request.url)
       );
     }
 
-    return NextResponse.next();
+    // Missing JWT secret
+    if (!JWT_SECRET) {
+      console.error("AUTH_SECRET is missing.");
+
+      return NextResponse.redirect(
+        new URL("/admin/login", request.url)
+      );
+    }
+
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+
+      // Only admin role is allowed
+      if (
+        !decoded ||
+        typeof decoded !== "object" ||
+        decoded.role !== "admin"
+      ) {
+        return NextResponse.redirect(
+          new URL("/admin/login", request.url)
+        );
+      }
+
+      return NextResponse.next();
+    } catch (error) {
+      console.error("Invalid admin token:", error);
+
+      return NextResponse.redirect(
+        new URL("/admin/login", request.url)
+      );
+    }
   }
 
   return NextResponse.next();

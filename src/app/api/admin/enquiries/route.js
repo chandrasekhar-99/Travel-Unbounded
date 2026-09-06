@@ -1,14 +1,61 @@
 import { NextResponse } from "next/server";
+
 import { connectDB } from "@/lib/mongodb";
+import { requireAdmin } from "@/lib/auth";
 import Enquiry from "@/models/Enquiry";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const COUNTRY_CODE_REGEX = /^\+\d{1,4}$/;
+const CONTACT_NUMBER_REGEX = /^\+[1-9]\d{6,14}$/;
+
+const ALLOWED_HOTEL_CATEGORIES = [
+  "Standard",
+  "Deluxe",
+  "Luxury",
+];
+
+// --------------------------------------------------
+// POST /api/admin/enquiries
+// Public - Website enquiry submission
+// --------------------------------------------------
 
 export async function POST(request) {
   try {
-    // Connect to MongoDB
-    await connectDB();
-
+    // -----------------------------------------------
     // Parse request body
-    const body = await request.json();
+    // -----------------------------------------------
+
+    let body;
+
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid request body.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // -----------------------------------------------
+    // Validate body
+    // -----------------------------------------------
+
+    if (
+      !body ||
+      typeof body !== "object" ||
+      Array.isArray(body)
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid request body.",
+        },
+        { status: 400 }
+      );
+    }
 
     const {
       fullName,
@@ -21,54 +68,75 @@ export async function POST(request) {
       numberOfChildren,
     } = body;
 
-    // -----------------------------------------
-    // Required field validation
-    // -----------------------------------------
-
-    if (
-      !fullName ||
-      !countryCode ||
-      !contactNumber ||
-      !email ||
-      !dateOfTravel ||
-      numberOfPeople === undefined ||
-      !hotelCategory
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Please fill in all required fields.",
-        },
-        { status: 400 }
-      );
-    }
-
-    // -----------------------------------------
-    // Full name validation
-    // -----------------------------------------
+    // -----------------------------------------------
+    // Required fields
+    // -----------------------------------------------
 
     if (
       typeof fullName !== "string" ||
-      fullName.trim().length < 2
+      typeof countryCode !== "string" ||
+      typeof contactNumber !== "string" ||
+      typeof email !== "string" ||
+      typeof dateOfTravel !== "string" ||
+      numberOfPeople === undefined ||
+      numberOfPeople === null ||
+      typeof hotelCategory !== "string"
     ) {
       return NextResponse.json(
         {
           success: false,
-          message: "Full name must contain at least 2 characters.",
+          message: "Please provide all required fields.",
         },
         { status: 400 }
       );
     }
 
-    // -----------------------------------------
-    // Email validation
-    // -----------------------------------------
+    // -----------------------------------------------
+    // Normalize string values
+    // -----------------------------------------------
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const normalizedFullName = fullName.trim();
+    const normalizedCountryCode = countryCode.trim();
+    const normalizedContactNumber = contactNumber.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedHotelCategory = hotelCategory.trim();
+
+    // -----------------------------------------------
+    // Full name validation
+    // -----------------------------------------------
 
     if (
-      typeof email !== "string" ||
-      !emailRegex.test(email.trim())
+      normalizedFullName.length < 2 ||
+      normalizedFullName.length > 100
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Full name must be between 2 and 100 characters.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Prevent names containing only whitespace/symbol-like input
+    if (!/[A-Za-zÀ-ÿ]/.test(normalizedFullName)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Please provide a valid full name.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // -----------------------------------------------
+    // Email validation
+    // -----------------------------------------------
+
+    if (
+      normalizedEmail.length > 254 ||
+      !EMAIL_REGEX.test(normalizedEmail)
     ) {
       return NextResponse.json(
         {
@@ -79,13 +147,30 @@ export async function POST(request) {
       );
     }
 
-    // -----------------------------------------
-    // Phone validation
-    // -----------------------------------------
+    // -----------------------------------------------
+    // Country code validation
+    // Example: +91, +1, +44
+    // -----------------------------------------------
+
+    if (!COUNTRY_CODE_REGEX.test(normalizedCountryCode)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Please provide a valid country code.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // -----------------------------------------------
+    // Contact number validation
+    // Example: +919876543210
+    // -----------------------------------------------
 
     if (
-      typeof contactNumber !== "string" ||
-      !contactNumber.startsWith("+")
+      !CONTACT_NUMBER_REGEX.test(
+        normalizedContactNumber
+      )
     ) {
       return NextResponse.json(
         {
@@ -96,22 +181,9 @@ export async function POST(request) {
       );
     }
 
-    if (
-      typeof countryCode !== "string" ||
-      !/^\+\d{1,4}$/.test(countryCode)
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Please provide a valid country code.",
-        },
-        { status: 400 }
-      );
-    }
-
-    // -----------------------------------------
+    // -----------------------------------------------
     // Travel date validation
-    // -----------------------------------------
+    // -----------------------------------------------
 
     const travelDate = new Date(dateOfTravel);
 
@@ -125,6 +197,7 @@ export async function POST(request) {
       );
     }
 
+    // Compare dates without time
     const today = new Date();
 
     today.setHours(0, 0, 0, 0);
@@ -140,33 +213,36 @@ export async function POST(request) {
       );
     }
 
-    // -----------------------------------------
+    // -----------------------------------------------
     // Number of people validation
-    // -----------------------------------------
+    // -----------------------------------------------
 
     const people = Number(numberOfPeople);
 
-    if (!Number.isInteger(people) || people < 1) {
+    if (
+      !Number.isInteger(people) ||
+      people < 1 ||
+      people > 1000
+    ) {
       return NextResponse.json(
         {
           success: false,
-          message: "Number of people must be at least 1.",
+          message:
+            "Number of people must be between 1 and 1000.",
         },
         { status: 400 }
       );
     }
 
-    // -----------------------------------------
+    // -----------------------------------------------
     // Hotel category validation
-    // -----------------------------------------
+    // -----------------------------------------------
 
-    const allowedHotelCategories = [
-      "Standard",
-      "Deluxe",
-      "Luxury",
-    ];
-
-    if (!allowedHotelCategories.includes(hotelCategory)) {
+    if (
+      !ALLOWED_HOTEL_CATEGORIES.includes(
+        normalizedHotelCategory
+      )
+    ) {
       return NextResponse.json(
         {
           success: false,
@@ -176,60 +252,100 @@ export async function POST(request) {
       );
     }
 
-    // -----------------------------------------
-    // Children validation
-    // -----------------------------------------
+    // -----------------------------------------------
+    // Number of children validation
+    // -----------------------------------------------
 
-    const children =
-      numberOfChildren === undefined ||
-      numberOfChildren === ""
-        ? 0
-        : Number(numberOfChildren);
+    let children = 0;
 
-    if (!Number.isInteger(children) || children < 0) {
+    if (
+      numberOfChildren !== undefined &&
+      numberOfChildren !== null &&
+      numberOfChildren !== ""
+    ) {
+      children = Number(numberOfChildren);
+    }
+
+    if (
+      !Number.isInteger(children) ||
+      children < 0 ||
+      children > 1000
+    ) {
       return NextResponse.json(
         {
           success: false,
           message:
-            "Number of children must be a valid number greater than or equal to 0.",
+            "Number of children must be between 0 and 1000.",
         },
         { status: 400 }
       );
     }
 
-    // -----------------------------------------
+    // -----------------------------------------------
+    // Optional logical validation
+    // -----------------------------------------------
+
+    if (children > people) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Number of children cannot exceed number of people.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // -----------------------------------------------
+    // Connect database
+    // -----------------------------------------------
+
+    await connectDB();
+
+    // -----------------------------------------------
     // Create enquiry
-    // -----------------------------------------
+    // -----------------------------------------------
 
     const enquiry = await Enquiry.create({
-      fullName: fullName.trim(),
-      countryCode,
-      contactNumber,
-      email: email.trim().toLowerCase(),
+      fullName: normalizedFullName,
+      countryCode: normalizedCountryCode,
+      contactNumber: normalizedContactNumber,
+      email: normalizedEmail,
       dateOfTravel: travelDate,
       numberOfPeople: people,
-      hotelCategory,
+      hotelCategory: normalizedHotelCategory,
       numberOfChildren: children,
     });
 
-    // -----------------------------------------
+    // -----------------------------------------------
     // Success response
-    // -----------------------------------------
+    // -----------------------------------------------
 
     return NextResponse.json(
       {
         success: true,
         message:
           "Thank you! Our travel expert will contact you within 24 hours.",
-        enquiry,
+        enquiry: {
+          id: enquiry._id.toString(),
+          fullName: enquiry.fullName,
+          email: enquiry.email,
+          dateOfTravel: enquiry.dateOfTravel,
+          numberOfPeople: enquiry.numberOfPeople,
+          hotelCategory: enquiry.hotelCategory,
+          numberOfChildren: enquiry.numberOfChildren,
+        },
       },
       { status: 201 }
     );
   } catch (error) {
-    console.error("ENQUIRY API ERROR:", error);
+    console.error("ENQUIRY POST API ERROR:", error);
 
-    // Handle Mongoose validation errors
-    if (error.name === "ValidationError") {
+    // -----------------------------------------------
+    // Mongoose validation error
+    // -----------------------------------------------
+
+    if (error?.name === "ValidationError") {
       return NextResponse.json(
         {
           success: false,
@@ -242,18 +358,10 @@ export async function POST(request) {
       );
     }
 
-    // Handle invalid JSON
-    if (error instanceof SyntaxError) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid request body.",
-        },
-        { status: 400 }
-      );
-    }
+    // -----------------------------------------------
+    // Unexpected error
+    // -----------------------------------------------
 
-    // Unexpected server/database error
     return NextResponse.json(
       {
         success: false,
@@ -265,10 +373,38 @@ export async function POST(request) {
   }
 }
 
+// --------------------------------------------------
+// GET /api/admin/enquiries
+// Admin only
+// --------------------------------------------------
 
 export async function GET() {
   try {
+    // -----------------------------------------------
+    // Authentication
+    // -----------------------------------------------
+
+    const admin = await requireAdmin();
+
+    if (!admin) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Unauthorized",
+        },
+        { status: 401 }
+      );
+    }
+
+    // -----------------------------------------------
+    // Database
+    // -----------------------------------------------
+
     await connectDB();
+
+    // -----------------------------------------------
+    // Fetch enquiries
+    // -----------------------------------------------
 
     const enquiries = await Enquiry.find()
       .sort({ createdAt: -1 })

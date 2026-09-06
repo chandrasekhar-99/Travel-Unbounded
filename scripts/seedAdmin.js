@@ -1,11 +1,15 @@
+import "dotenv/config";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
+
 import AdminUser from "../src/models/Admin.js";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  throw new Error("MONGODB_URI is not defined in .env");
+  throw new Error(
+    "MONGODB_URI is not defined in .env"
+  );
 }
 
 const ADMIN_EMAIL = "admin@gmail.com";
@@ -26,7 +30,10 @@ async function seedAdmin() {
       return;
     }
 
-    const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 12);
+    const passwordHash = await bcrypt.hash(
+      ADMIN_PASSWORD,
+      12
+    );
 
     await AdminUser.create({
       name: "Travel Unbounded Admin",

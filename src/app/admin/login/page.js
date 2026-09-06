@@ -2,9 +2,17 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FiLock, FiMail, FiLogIn } from "react-icons/fi";
+import {
+  FiLock,
+  FiMail,
+  FiLogIn,
+  FiEye,
+  FiEyeOff,
+} from "react-icons/fi";
 
 import useAdminAuth from "@/hooks/useAdminAuth";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const AdminLogin = () => {
   const router = useRouter();
@@ -21,6 +29,14 @@ const AdminLogin = () => {
     password: "",
   });
 
+  const [fieldErrors, setFieldErrors] = useState({
+    email: "",
+    password: "",
+  });
+
+  const [showPassword, setShowPassword] =
+    useState(false);
+
   const handleChange = (event) => {
     const { name, value } = event.target;
 
@@ -29,16 +45,71 @@ const AdminLogin = () => {
       [name]: value,
     }));
 
+    setFieldErrors((previous) => ({
+      ...previous,
+      [name]: "",
+    }));
+
     if (error) {
       resetError();
     }
   };
 
+  const validateForm = () => {
+    const errors = {
+      email: "",
+      password: "",
+    };
+
+    const email = formData.email.trim();
+    const password = formData.password;
+
+    // -----------------------------------------
+    // Email validation
+    // -----------------------------------------
+
+    if (!email) {
+      errors.email = "Email address is required.";
+    } else if (email.length > 254) {
+      errors.email = "Email address is too long.";
+    } else if (!EMAIL_REGEX.test(email)) {
+      errors.email =
+        "Please enter a valid email address.";
+    }
+
+    // -----------------------------------------
+    // Password validation
+    // -----------------------------------------
+
+    if (!password) {
+      errors.password = "Password is required.";
+    } else if (password.length < 8) {
+      errors.password =
+        "Password must be at least 8 characters.";
+    } else if (password.length > 128) {
+      errors.password =
+        "Password must not exceed 128 characters.";
+    }
+
+    setFieldErrors(errors);
+
+    return !errors.email && !errors.password;
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    const isValid = validateForm();
+
+    if (!isValid) {
+      return;
+    }
+
     try {
-      await loginAdmin(formData);
+      await loginAdmin({
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+      });
 
       router.replace("/admin/dashboard/enquiries");
       router.refresh();
@@ -78,7 +149,9 @@ const AdminLogin = () => {
           <form
             onSubmit={handleSubmit}
             className="space-y-5"
+            noValidate
           >
+
             {/* Email */}
             <div>
               <label
@@ -102,10 +175,31 @@ const AdminLogin = () => {
                   onChange={handleChange}
                   placeholder="Enter your email"
                   autoComplete="email"
-                  required
-                  className="w-full rounded-lg border border-gray-300 py-3 pl-10 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  maxLength={254}
+                  aria-invalid={Boolean(
+                    fieldErrors.email
+                  )}
+                  aria-describedby={
+                    fieldErrors.email
+                      ? "email-error"
+                      : undefined
+                  }
+                  className={`w-full rounded-lg border py-3 pl-10 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:ring-2 ${
+                    fieldErrors.email
+                      ? "border-red-400 focus:border-red-500 focus:ring-red-500/20"
+                      : "border-gray-300 focus:border-primary focus:ring-primary/20"
+                  }`}
                 />
               </div>
+
+              {fieldErrors.email && (
+                <p
+                  id="email-error"
+                  className="mt-1.5 text-xs text-red-600"
+                >
+                  {fieldErrors.email}
+                </p>
+              )}
             </div>
 
             {/* Password */}
@@ -118,28 +212,81 @@ const AdminLogin = () => {
               </label>
 
               <div className="relative">
+
+                {/* Lock Icon */}
                 <FiLock
                   size={18}
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                 />
 
+                {/* Password Input */}
                 <input
                   id="password"
                   name="password"
-                  type="password"
+                  type={
+                    showPassword
+                      ? "text"
+                      : "password"
+                  }
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Enter your password"
                   autoComplete="current-password"
-                  required
-                  className="w-full rounded-lg border border-gray-300 py-3 pl-10 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  maxLength={128}
+                  aria-invalid={Boolean(
+                    fieldErrors.password
+                  )}
+                  aria-describedby={
+                    fieldErrors.password
+                      ? "password-error"
+                      : undefined
+                  }
+                  className={`w-full rounded-lg border py-3 pl-10 pr-12 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:ring-2 ${
+                    fieldErrors.password
+                      ? "border-red-400 focus:border-red-500 focus:ring-red-500/20"
+                      : "border-gray-300 focus:border-primary focus:ring-primary/20"
+                  }`}
                 />
+
+                {/* Show / Hide Password */}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowPassword(
+                      (previous) => !previous
+                    )
+                  }
+                  aria-label={
+                    showPassword
+                      ? "Hide password"
+                      : "Show password"
+                  }
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  {showPassword ? (
+                    <FiEyeOff size={18} />
+                  ) : (
+                    <FiEye size={18} />
+                  )}
+                </button>
               </div>
+
+              {fieldErrors.password && (
+                <p
+                  id="password-error"
+                  className="mt-1.5 text-xs text-red-600"
+                >
+                  {fieldErrors.password}
+                </p>
+              )}
             </div>
 
-            {/* Error */}
+            {/* API Error */}
             {error && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              <div
+                role="alert"
+                className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+              >
                 {error}
               </div>
             )}

@@ -5,56 +5,24 @@ import { useCallback, useEffect, useState } from "react";
 const useAdminEnquiries = () => {
   const [enquiries, setEnquiries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState("");
 
   // -----------------------------------------
-  // Fetch enquiries
+  // Fetch enquiries from API
   // -----------------------------------------
 
-  const fetchEnquiries = useCallback(async () => {
-    setIsLoading(true);
-    setError("");
-
-    try {
-      const response = await fetch("/api/admin/enquiries", {
-        method: "GET",
-        credentials: "include",
-        cache: "no-store",
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data?.message || "Unable to fetch enquiries."
-        );
+  const fetchEnquiries = useCallback(
+    async ({ refresh = false } = {}) => {
+      if (refresh) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
       }
 
-      setEnquiries(data?.enquiries || []);
+      setError("");
 
-      return data;
-    } catch (error) {
-      console.error("Fetch enquiries error:", error);
-
-      setError(
-        error?.message || "Unable to fetch enquiries."
-      );
-
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  // -----------------------------------------
-  // Initial fetch
-  // -----------------------------------------
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadEnquiries = async () => {
       try {
         const response = await fetch(
           "/api/admin/enquiries",
@@ -65,7 +33,29 @@ const useAdminEnquiries = () => {
           }
         );
 
-        const data = await response.json();
+        let data;
+
+        try {
+          data = await response.json();
+        } catch {
+          throw new Error(
+            "Unable to process the server response."
+          );
+        }
+
+        // -----------------------------------------
+        // Authentication
+        // -----------------------------------------
+
+        if (response.status === 401) {
+          throw new Error(
+            "Your session has expired. Please login again."
+          );
+        }
+
+        // -----------------------------------------
+        // API error
+        // -----------------------------------------
 
         if (!response.ok) {
           throw new Error(
@@ -74,28 +64,104 @@ const useAdminEnquiries = () => {
           );
         }
 
-        if (!cancelled) {
-          setEnquiries(data?.enquiries || []);
-          setError("");
+        // -----------------------------------------
+        // Update enquiries
+        // -----------------------------------------
+
+        setEnquiries(data?.enquiries || []);
+
+        return data;
+      } catch (error) {
+        console.error(
+          "Fetch enquiries error:",
+          error
+        );
+
+        setError(
+          error?.message ||
+            "Unable to fetch enquiries."
+        );
+
+        throw error;
+      } finally {
+        if (refresh) {
+          setIsRefreshing(false);
+        } else {
           setIsLoading(false);
         }
+      }
+    },
+    []
+  );
+
+  // -----------------------------------------
+  // Initial fetch
+  // -----------------------------------------
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadInitialEnquiries = async () => {
+      try {
+        const response = await fetch(
+          "/api/admin/enquiries",
+          {
+            method: "GET",
+            credentials: "include",
+            cache: "no-store",
+          }
+        );
+
+        let data;
+
+        try {
+          data = await response.json();
+        } catch {
+          throw new Error(
+            "Unable to process the server response."
+          );
+        }
+
+        if (response.status === 401) {
+          throw new Error(
+            "Your session has expired. Please login again."
+          );
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            data?.message ||
+              "Unable to fetch enquiries."
+          );
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        setEnquiries(data?.enquiries || []);
+        setError("");
+        setIsLoading(false);
       } catch (error) {
         console.error(
           "Initial fetch enquiries error:",
           error
         );
 
-        if (!cancelled) {
-          setError(
-            error?.message ||
-              "Unable to fetch enquiries."
-          );
-          setIsLoading(false);
+        if (cancelled) {
+          return;
         }
+
+        setError(
+          error?.message ||
+            "Unable to fetch enquiries."
+        );
+
+        setIsLoading(false);
       }
     };
 
-    loadEnquiries();
+    loadInitialEnquiries();
 
     return () => {
       cancelled = true;
@@ -112,8 +178,11 @@ const useAdminEnquiries = () => {
       setError("");
 
       try {
+        // Backend route:
+        // /api/admin/enquiry/[id]
+
         const response = await fetch(
-          `/api/admin/enquiries/${id}`,
+          `/api/admin/enquiry/${id}`,
           {
             method: "PATCH",
             headers: {
@@ -126,7 +195,29 @@ const useAdminEnquiries = () => {
           }
         );
 
-        const data = await response.json();
+        let data;
+
+        try {
+          data = await response.json();
+        } catch {
+          throw new Error(
+            "Unable to process the server response."
+          );
+        }
+
+        // -----------------------------------------
+        // Authentication
+        // -----------------------------------------
+
+        if (response.status === 401) {
+          throw new Error(
+            "Your session has expired. Please login again."
+          );
+        }
+
+        // -----------------------------------------
+        // API error
+        // -----------------------------------------
 
         if (!response.ok) {
           throw new Error(
@@ -134,6 +225,10 @@ const useAdminEnquiries = () => {
               "Unable to update enquiry."
           );
         }
+
+        // -----------------------------------------
+        // Update local state
+        // -----------------------------------------
 
         setEnquiries((previous) =>
           previous.map((enquiry) =>
@@ -179,11 +274,19 @@ const useAdminEnquiries = () => {
     setError("");
   }, []);
 
+  // -----------------------------------------
+  // Return
+  // -----------------------------------------
+
   return {
     enquiries,
+
     isLoading,
+    isRefreshing,
     isUpdating,
+
     error,
+
     fetchEnquiries,
     updateEnquiryStatus,
     resetError,

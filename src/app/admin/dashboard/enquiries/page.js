@@ -22,6 +22,17 @@ const STATUS_OPTIONS = [
   "Closed",
 ];
 
+const isValidStatus = (status) => {
+  return STATUS_OPTIONS.includes(status);
+};
+
+const isValidEnquiryId = (id) => {
+  return (
+    typeof id === "string" &&
+    /^[a-f\d]{24}$/i.test(id)
+  );
+};
+
 const EnquiriesPage = () => {
   const {
     enquiries,
@@ -88,16 +99,26 @@ const EnquiriesPage = () => {
   // -----------------------------------------
 
   const handleStatusChange = async (id, status) => {
-    try {
-      setUpdatingId(id);
+  if (!isValidEnquiryId(id)) {
+    console.error("Invalid enquiry ID.");
+    return;
+  }
 
-      await updateEnquiryStatus(id, status);
-    } catch (error) {
-      console.error("Status update failed:", error);
-    } finally {
-      setUpdatingId(null);
-    }
-  };
+  if (!isValidStatus(status)) {
+    console.error("Invalid enquiry status.");
+    return;
+  }
+
+  try {
+    setUpdatingId(id);
+
+    await updateEnquiryStatus(id, status);
+  } catch (error) {
+    console.error("Status update failed:", error);
+  } finally {
+    setUpdatingId(null);
+  }
+};
 
   // -----------------------------------------
   // Status styles

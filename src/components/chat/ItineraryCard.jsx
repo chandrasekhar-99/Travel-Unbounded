@@ -185,35 +185,39 @@ Highlight: ${day.highlight || "N/A"}`;
     }
   };
 
+  // -----------------------------------------
+  // Save
+  // -----------------------------------------
+
   const handleSave = async () => {
-  try {
-    setIsSaving(true);
+    try {
+      setIsSaving(true);
 
-    const response = await fetch("/api/itineraries", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        itinerary,
-      }),
-    });
+      const response = await fetch("/api/itineraries", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          itinerary,
+        }),
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (!response.ok || !data.success) {
-      throw new Error(
-        data.message || "Failed to save itinerary."
-      );
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || "Failed to save itinerary."
+        );
+      }
+
+      setIsSaved(true);
+    } catch (error) {
+      console.error("Failed to save itinerary:", error);
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsSaved(true);
-  } catch (error) {
-    console.error("Failed to save itinerary:", error);
-  } finally {
-    setIsSaving(false);
-  }
-};
+  };
 
   return (
     <div className="w-full space-y-4">
@@ -238,22 +242,23 @@ Highlight: ${day.highlight || "N/A"}`;
         </button>
 
         {/* TXT Download */}
-        {/* <button
+        {/* 
+        <button
           type="button"
           onClick={handleDownload}
           className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
         >
           <FiDownload size={14} />
-
           Download
-        </button> */}
+        </button>
+        */}
 
         {/* PDF Download */}
         <button
           type="button"
           onClick={handleDownloadPdf}
           disabled={isGeneratingPdf}
-          className="flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-white transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
         >
           <FiFileText size={14} />
 
@@ -262,13 +267,18 @@ Highlight: ${day.highlight || "N/A"}`;
             : "Download PDF"}
         </button>
 
+        {/* Save */}
         <button
           type="button"
           onClick={handleSave}
           disabled={isSaving || isSaved}
           className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isSaved ? <FiCheck size={14} /> : <FiSave size={14} />}
+          {isSaved ? (
+            <FiCheck size={14} />
+          ) : (
+            <FiSave size={14} />
+          )}
 
           {isSaving
             ? "Saving..."
@@ -306,7 +316,7 @@ Highlight: ${day.highlight || "N/A"}`;
             className="break-inside-avoid rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
           >
             <div className="mb-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">
                 Day {day.day}
               </p>
 
@@ -321,7 +331,7 @@ Highlight: ${day.highlight || "N/A"}`;
                   key={index}
                   className="flex gap-2 text-sm text-gray-700"
                 >
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600" />
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
 
                   <span>{activity}</span>
                 </div>
@@ -329,12 +339,12 @@ Highlight: ${day.highlight || "N/A"}`;
             </div>
 
             {day.highlight && (
-              <div className="mt-4 rounded-xl bg-blue-50 p-3">
-                <p className="text-xs font-semibold text-blue-700">
+              <div className="mt-4 rounded-xl bg-primary/10 p-3">
+                <p className="text-xs font-semibold text-primary">
                   Highlight
                 </p>
 
-                <p className="mt-1 text-sm text-blue-900">
+                <p className="mt-1 text-sm text-gray-700">
                   {day.highlight}
                 </p>
               </div>

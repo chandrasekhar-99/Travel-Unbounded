@@ -3,7 +3,9 @@
 import { useState } from "react";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const COUNTRY_CODE_REGEX = /^\+\d{1,4}$/;
+
 const CONTACT_NUMBER_REGEX = /^\+[1-9]\d{6,14}$/;
 
 const ALLOWED_HOTEL_CATEGORIES = [
@@ -225,7 +227,7 @@ const useEnquiry = () => {
       // API request
       // -----------------------------------------
 
-      const response = await fetch("/api/enquiries", {
+      const response = await fetch("/api/admin/enquiries", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -1,5 +1,6 @@
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import TravelChatbot from "@/components/chat/TravelChatbot";
 
 export default function WebsiteLayout({ children }) {
   return (
@@ -11,6 +12,8 @@ export default function WebsiteLayout({ children }) {
       </main>
 
       <Footer />
+
+      <TravelChatbot />
     </div>
   );
 }

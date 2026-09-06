@@ -3,6 +3,7 @@
 import { useState } from "react";
 import PhoneInput, {
   isValidPhoneNumber,
+  isPossiblePhoneNumber,
   parsePhoneNumber,
 } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
@@ -47,6 +48,8 @@ const BookingForm = () => {
 
     if (!formData.phone) {
       newErrors.phone = "Contact number is required.";
+    } else if (!isPossiblePhoneNumber(formData.phone)) {
+      newErrors.phone = "Please enter a valid phone number.";
     } else if (!isValidPhoneNumber(formData.phone)) {
       newErrors.phone = "Please enter a valid phone number.";
     }
@@ -282,6 +285,7 @@ const BookingForm = () => {
                 value={formData.phone}
                 onChange={handlePhoneChange}
                 placeholder="Enter phone number"
+                limitMaxLength
                 className={`phone-input ${
                   errors.phone ? "phone-input-error" : ""
                 }`}

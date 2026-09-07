@@ -169,102 +169,102 @@ const useAdminEnquiries = () => {
   }, []);
 
   // -----------------------------------------
-  // Update enquiry status
-  // -----------------------------------------
+// Update enquiry status
+// -----------------------------------------
 
-  const updateEnquiryStatus = useCallback(
-    async (id, status) => {
-      setIsUpdating(true);
-      setError("");
+const updateEnquiryStatus = useCallback(
+  async (id, status) => {
+    setIsUpdating(true);
+    setError("");
+
+    try {
+      // Backend route:
+      // /api/admin/enquiries/[id]
+
+      const response = await fetch(
+        `/api/admin/enquiries/${id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            status,
+          }),
+        }
+      );
+
+      let data;
 
       try {
-        // Backend route:
-        // /api/admin/enquiry/[id]
-
-        const response = await fetch(
-          `/api/admin/enquiry/${id}`,
-          {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-            body: JSON.stringify({
-              status,
-            }),
-          }
+        data = await response.json();
+      } catch {
+        throw new Error(
+          "Unable to process the server response."
         );
+      }
 
-        let data;
+      // -----------------------------------------
+      // Authentication
+      // -----------------------------------------
 
-        try {
-          data = await response.json();
-        } catch {
-          throw new Error(
-            "Unable to process the server response."
-          );
-        }
-
-        // -----------------------------------------
-        // Authentication
-        // -----------------------------------------
-
-        if (response.status === 401) {
-          throw new Error(
-            "Your session has expired. Please login again."
-          );
-        }
-
-        // -----------------------------------------
-        // API error
-        // -----------------------------------------
-
-        if (!response.ok) {
-          throw new Error(
-            data?.message ||
-              "Unable to update enquiry."
-          );
-        }
-
-        // -----------------------------------------
-        // Update local state
-        // -----------------------------------------
-
-        setEnquiries((previous) =>
-          previous.map((enquiry) =>
-            enquiry._id === id
-              ? {
-                  ...enquiry,
-                  status:
-                    data?.enquiry?.status ||
-                    status,
-                  updatedAt:
-                    data?.enquiry?.updatedAt ||
-                    enquiry.updatedAt,
-                }
-              : enquiry
-          )
+      if (response.status === 401) {
+        throw new Error(
+          "Your session has expired. Please login again."
         );
+      }
 
-        return data;
-      } catch (error) {
-        console.error(
-          "Update enquiry error:",
-          error
-        );
+      // -----------------------------------------
+      // API error
+      // -----------------------------------------
 
-        setError(
-          error?.message ||
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
             "Unable to update enquiry."
         );
-
-        throw error;
-      } finally {
-        setIsUpdating(false);
       }
-    },
-    []
-  );
+
+      // -----------------------------------------
+      // Update local state
+      // -----------------------------------------
+
+      setEnquiries((previous) =>
+        previous.map((enquiry) =>
+          enquiry._id === id
+            ? {
+                ...enquiry,
+                status:
+                  data?.enquiry?.status ||
+                  status,
+                updatedAt:
+                  data?.enquiry?.updatedAt ||
+                  enquiry.updatedAt,
+              }
+            : enquiry
+        )
+      );
+
+      return data;
+    } catch (error) {
+      console.error(
+        "Update enquiry error:",
+        error
+      );
+
+      setError(
+        error?.message ||
+          "Unable to update enquiry."
+      );
+
+      throw error;
+    } finally {
+      setIsUpdating(false);
+    }
+  },
+  []
+);
 
   // -----------------------------------------
   // Reset error

@@ -24,7 +24,8 @@ https://travel-unbounded-omega-three.vercel.app/
 - Tailwind CSS
 - React Icons
 - react-phone-number-input
-- Recharts
+- Chart.js
+- react-chartjs-2
 
 ### Backend
 
@@ -199,16 +200,11 @@ Admin login:
 
 ---
 
-## Admin Routes
+### Admin Routes
 
-The current admin frontend routes are:
-
-```text
-/admin/login
-/admin/dashboard
-/admin/dashboard/enquiries
-/admin/dashboard/analytics
-```
+- `/admin/login` — Admin login page
+- `/admin/enquiries` — Manage customer enquiries
+- `/admin/analytics` — View enquiry analytics
 
 ### Admin Login
 
@@ -217,14 +213,6 @@ The current admin frontend routes are:
 ```
 
 Used by administrators to authenticate.
-
-### Admin Dashboard
-
-```text
-/admin/dashboard
-```
-
-Provides the main admin dashboard.
 
 ### Admin Enquiries
 
@@ -298,15 +286,14 @@ The analytics data is generated from the enquiry records stored in MongoDB.
 
 The current frontend routes are:
 
-| Route | Description |
-|---|---|
-| `/` | Home page |
-| `/about` | About page |
-| `/contact` | Contact / booking enquiry page |
-| `/admin/login` | Admin login |
-| `/admin/dashboard` | Admin dashboard |
-| `/admin/dashboard/enquiries` | Admin enquiry management |
-| `/admin/dashboard/analytics` | Admin enquiry analytics |
+| Route                        | Description                    |
+| ---------------------------- | ------------------------------ |
+| `/`                          | Home page                      |
+| `/about`                     | About page                     |
+| `/contact`                   | Contact / booking enquiry page |
+| `/admin/login`               | Admin login                    |
+| `/admin/dashboard/enquiries` | Admin enquiry management       |
+| `/admin/dashboard/analytics` | Admin enquiry analytics        |
 
 ### Public Routes
 
@@ -320,12 +307,39 @@ The current frontend routes are:
 
 ```text
 /admin/login
-/admin/dashboard
 /admin/dashboard/enquiries
 /admin/dashboard/analytics
 ```
 
 > Note: `(website)` is a Next.js route group and does not appear in the URL.
+
+---
+
+## Admin Routes
+
+### Admin Login
+
+```text
+/admin/login
+```
+
+Used by administrators to authenticate.
+
+### Admin Enquiries
+
+```text
+/admin/dashboard/enquiries
+```
+
+Provides enquiry management functionality, including searching, filtering, viewing, and updating enquiry status.
+
+### Admin Analytics
+
+```text
+/admin/dashboard/analytics
+```
+
+Provides visual analytics for travel enquiries.
 
 ---
 
@@ -430,11 +444,22 @@ The Gemini API key is accessed server-side.
 
 ## Itinerary API
 
+### Save Itinerary
+
 ```http
 POST /api/itineraries
 ```
 
-Handles travel itinerary generation and itinerary-related requests.
+Saves a generated travel itinerary to MongoDB.
+
+### Get Itineraries
+
+```http
+GET /api/itineraries
+```
+
+Returns saved travel itineraries from MongoDB, sorted by creation date with the newest itineraries first.
+
 
 ---
 

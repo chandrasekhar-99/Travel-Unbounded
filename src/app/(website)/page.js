@@ -42,7 +42,7 @@ const Home = () => {
             </p>
 
             <h1 className="text-4xl font-bold leading-tight sm:text-5xl md:text-6xl lg:text-7xl">
-              India&apos;s Most Trusted Experiential Travel Experts
+              India&apos;s Most Trusted Experiential Travel Experts for Good Destinations Across India and the World
             </h1>
 
             <p className="mt-6 max-w-2xl text-lg leading-8 text-white/90 sm:text-xl">
